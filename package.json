@@ -7,10 +7,14 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js"
   },
+  "browser": {
+    "process": false
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "agora-access-token": "^2.0.4",
     "chess.js": "^1.0.0-beta.8",
     "cors": "^2.8.5",
     "express": "^4.19.2",

@@ -48,7 +48,15 @@ io.on('connection', (socket) => {
     onlineUsers--;
     console.log(`A user disconnected. Total users online: ${onlineUsers}`);
     io.emit('updateCount', onlineUsers);
+
+    // If the user was waiting for an opponent, remove from waitingUsers
     waitingUsers = waitingUsers.filter(user => user !== socket);
+
+    // If the user was in a game, notify their opponent
+    if (socket.partner) {
+      socket.partner.emit('opponentLeft'); // Notify the opponent
+      socket.partner.partner = null; // Remove the reference to the disconnected partner
+    }
   });
 
   socket.on('play', async () => {

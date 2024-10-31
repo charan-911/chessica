@@ -15,7 +15,6 @@ const io = socketIo(server, {
   }
 });
 
-// Function to generate a unique channel name for each game session
 const generateGameChannel = () => `game_${Math.random().toString(36).substr(2, 9)}`;
 
 let onlineUsers = 0;
@@ -31,13 +30,11 @@ io.on('connection', (socket) => {
     console.log(`A user disconnected. Total users online: ${onlineUsers}`);
     io.emit('updateCount', onlineUsers);
 
-    // If the user was waiting for an opponent, remove from waitingUsers
     waitingUsers = waitingUsers.filter(user => user !== socket);
 
-    // If the user was in a game, notify their opponent
     if (socket.partner) {
-      socket.partner.emit('opponentLeft'); // Notify the opponent
-      socket.partner.partner = null; // Remove the reference to the disconnected partner
+      socket.partner.emit('opponentLeft');
+      socket.partner.partner = null;
     }
   });
 
@@ -47,12 +44,10 @@ io.on('connection', (socket) => {
       socket.partner = partner;
       partner.partner = socket;
 
-      // Create a new chess game for the paired users
       const chess = new Chess();
       socket.chess = chess;
       partner.chess = chess;
 
-      // Notify both players they are paired
       socket.emit('paired', { initiator: true, channelName: generateGameChannel() });
       partner.emit('paired', { initiator: false, channelName: generateGameChannel() });
       console.log('Both players have been paired.');
@@ -67,9 +62,30 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('move', (move) => {
+  socket.on('move', (move, callback) => {
     if (socket.chess && socket.chess.move(move)) {
-      socket.partner.emit('move', move);
+      console.log(`Move received: ${JSON.stringify(move)}`);
+      
+      const sendMoveToOpponent = (move, retries = 10) => {
+        if (retries <= 0) {
+          console.log("Failed to send move to opponent after multiple attempts.");
+          return;
+        }
+
+        socket.partner.emit('move', move, (ack) => {
+          if (!ack || !ack.success) {
+            setTimeout(() => sendMoveToOpponent(move, retries - 1), 500);
+          } else {
+            console.log('Move acknowledged by opponent.');
+          }
+        });
+      };
+
+      sendMoveToOpponent(move);
+
+      if (callback) {
+        callback({ success: true });
+      }
     }
   });
 });

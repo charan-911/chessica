@@ -74,7 +74,7 @@ io.on('connection', (socket) => {
 
         socket.partner.emit('move', move, (ack) => {
           if (!ack || !ack.success) {
-            setTimeout(() => sendMoveToOpponent(move, retries - 1), 500);
+            setTimeout(() => sendMoveToOpponent(move, retries - 1), 5000);
           } else {
             console.log('Move acknowledged by opponent.');
           }
